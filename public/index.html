@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>n8n instance manager</title>
+<link rel="stylesheet" href="/assets/style.css" />
+</head>
+<body>
+
+<!-- ---------- Login ---------- -->
+<div id="login-screen">
+  <div class="login-card">
+    <div class="login-brand">n8n-manager</div>
+    <h1 class="login-title">Sign in</h1>
+    <form id="login-form">
+      <div class="field">
+        <label for="login-user">Username</label>
+        <input id="login-user" type="text" autocomplete="username" required />
+      </div>
+      <div class="field">
+        <label for="login-pass">Password</label>
+        <input id="login-pass" type="password" autocomplete="current-password" required />
+      </div>
+      <div class="error-text" id="login-error"></div>
+      <button class="btn btn-block" type="submit">Sign in</button>
+    </form>
+  </div>
+</div>
+
+<!-- ---------- App ---------- -->
+<div id="app-screen">
+  <div class="topbar">
+    <div class="brand">
+      <span class="brand-mark">n8n-manager</span>
+      <span class="brand-sub">isolated instances, one container each</span>
+    </div>
+    <div class="topbar-actions">
+      <button class="btn" id="new-instance-btn">+ New instance</button>
+      <button class="btn btn-ghost btn-sm" id="logout-btn">Sign out</button>
+    </div>
+  </div>
+
+  <main>
+    <div class="section-head">
+      <h2 id="instance-count">Instances</h2>
+      <button class="btn btn-ghost btn-sm" id="refresh-btn">Refresh</button>
+    </div>
+    <div id="instance-list"></div>
+  </main>
+</div>
+
+<!-- ---------- Create instance modal ---------- -->
+<div class="modal-backdrop" id="create-modal">
+  <div class="modal">
+    <h3>New instance</h3>
+    <div class="modal-sub">Spins up a dedicated n8n container. Credentials stay inside it — no other instance can see them.</div>
+    <form id="create-form">
+      <div class="field">
+        <label for="f-code">Code / ID</label>
+        <input id="f-code" type="text" placeholder="e.g. daffa or team-ops" required pattern="[a-z0-9][a-z0-9-]{2,19}" />
+        <div class="hint">Lowercase letters, numbers, dashes. 3-20 characters. Becomes the URL: /code/</div>
+      </div>
+      <div class="field">
+        <label for="f-owner">Owner name (optional)</label>
+        <input id="f-owner" type="text" placeholder="Who this instance is for" />
+      </div>
+      <div class="field">
+        <label for="f-user">Basic-auth username (optional)</label>
+        <input id="f-user" type="text" placeholder="Extra login on top of the container itself" />
+      </div>
+      <div class="field">
+        <label for="f-pass">Basic-auth password (optional)</label>
+        <input id="f-pass" type="password" placeholder="Leave blank for no extra login" />
+      </div>
+      <div class="error-text" id="create-error"></div>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-ghost" id="create-cancel">Cancel</button>
+        <button type="submit" class="btn" id="create-submit">Create instance</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ---------- Logs modal ---------- -->
+<div class="modal-backdrop" id="logs-modal">
+  <div class="modal wide">
+    <h3 id="logs-title">Logs</h3>
+    <div class="modal-sub">Last 200 lines. Refresh to pull the latest.</div>
+    <div class="logs-box" id="logs-content">Loading…</div>
+    <div class="modal-actions">
+      <button type="button" class="btn btn-ghost" id="logs-refresh">Refresh</button>
+      <button type="button" class="btn" id="logs-close">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- ---------- Delete confirm modal ---------- -->
+<div class="modal-backdrop" id="delete-modal">
+  <div class="modal">
+    <h3>Delete instance</h3>
+    <div class="modal-sub" id="delete-sub"></div>
+    <label style="display:flex; align-items:center; gap:8px; font-size:13px; color: var(--text-muted); margin-top: 8px;">
+      <input type="checkbox" id="delete-remove-data" />
+      Also permanently delete its data volume (all workflows &amp; credentials)
+    </label>
+    <div class="modal-actions">
+      <button type="button" class="btn btn-ghost" id="delete-cancel">Cancel</button>
+      <button type="button" class="btn btn-danger" id="delete-confirm">Delete</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="/assets/app.js"></script>
+</body>
+</html>

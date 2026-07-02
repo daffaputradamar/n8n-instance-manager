@@ -1,0 +1,20 @@
+{
+  "name": "n8n-manager",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Admin panel that provisions isolated n8n Docker containers per user (path-based, custom code/id).",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "dockerode": "^4.0.2",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "express-session": "^1.18.0",
+    "http-proxy-middleware": "^2.0.6"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

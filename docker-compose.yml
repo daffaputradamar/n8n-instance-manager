@@ -1,0 +1,29 @@
+version: "3.8"
+
+services:
+  manager:
+    build: .
+    container_name: n8n-manager
+    restart: unless-stopped
+    ports:
+      - "${MANAGER_PORT:-8000}:8000"
+    environment:
+      - PORT=8000
+      - ADMIN_USER=${ADMIN_USER:-admin}
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD:-changeme}
+      - SESSION_SECRET=${SESSION_SECRET:-please-change-this-session-secret}
+      - PUBLIC_BASE_URL=${PUBLIC_BASE_URL:-http://localhost:8000}
+      - N8N_NETWORK=n8n-manager-net
+      - N8N_IMAGE=${N8N_IMAGE:-n8nio/n8n:latest}
+      - TZ=${TZ:-Asia/Jakarta}
+    volumes:
+      # Lets the manager talk to the Docker daemon to create/start/stop n8n containers
+      - /var/run/docker.sock:/var/run/docker.sock
+      # Persists the instance registry (codes, owners, metadata) - NOT n8n data itself
+      - ./data:/app/data
+    networks:
+      - n8n-manager-net
+
+networks:
+  n8n-manager-net:
+    name: n8n-manager-net
