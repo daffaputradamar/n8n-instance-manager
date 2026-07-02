@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>n8n instance manager</title>
+<title>n8n-manager</title>
 <link rel="stylesheet" href="/m/style.css" />
 </head>
 <body>
@@ -30,48 +30,140 @@
 
 <!-- ---------- App ---------- -->
 <div id="app-screen">
-  <div class="topbar">
-    <div class="brand">
-      <span class="brand-mark">n8n-manager</span>
-      <span class="brand-sub">isolated instances, one container each</span>
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-brand">n8n-manager</div>
+    <nav class="sidebar-nav" id="sidebar-nav">
+      <a class="nav-item active" data-panel="dashboard">Dashboard</a>
+      <a class="nav-item" data-panel="instances">Instances</a>
+      <a class="nav-item" data-panel="backups">Backups</a>
+      <a class="nav-item" data-panel="schedules">Schedules</a>
+      <a class="nav-item" data-panel="audit">Audit Log</a>
+      <a class="nav-item admin-only" data-panel="users">Users</a>
+    </nav>
+    <div class="sidebar-footer">
+      <span class="sidebar-user" id="sidebar-user"></span>
+      <button class="btn btn-sm btn-ghost" id="logout-btn">Sign out</button>
     </div>
-    <div class="topbar-actions">
-      <button class="btn" id="new-instance-btn">+ New instance</button>
-      <button class="btn btn-ghost btn-sm" id="logout-btn">Sign out</button>
-    </div>
-  </div>
+  </aside>
 
-  <main>
-    <div class="section-head">
-      <h2 id="instance-count">Instances</h2>
-      <button class="btn btn-ghost btn-sm" id="refresh-btn">Refresh</button>
-    </div>
-    <div id="instance-list"></div>
+  <main class="main-content">
+
+    <!-- ===== Dashboard ===== -->
+    <section class="panel active" id="panel-dashboard">
+      <h2>Dashboard</h2>
+      <div class="stats-grid" id="dashboard-stats"></div>
+      <div class="card mt" id="dashboard-list"></div>
+    </section>
+
+    <!-- ===== Instances ===== -->
+    <section class="panel" id="panel-instances">
+      <div class="panel-header">
+        <h2>Instances</h2>
+        <div class="panel-toolbar">
+          <input type="text" class="input-sm" id="inst-search" placeholder="Search code / owner..." />
+          <select class="input-sm" id="inst-tag-filter"><option value="">All tags</option></select>
+          <button class="btn" id="new-instance-btn">+ New</button>
+        </div>
+      </div>
+      <div class="bulk-bar" id="bulk-bar">
+        <span id="bulk-count">0 selected</span>
+        <button class="btn btn-ghost btn-sm" data-bulk="start">Start</button>
+        <button class="btn btn-ghost btn-sm" data-bulk="stop">Stop</button>
+        <button class="btn btn-ghost btn-sm" data-bulk="restart">Restart</button>
+        <button class="btn btn-danger btn-sm" data-bulk="delete">Delete</button>
+      </div>
+      <div id="instance-list"></div>
+    </section>
+
+    <!-- ===== Backups ===== -->
+    <section class="panel" id="panel-backups">
+      <h2>Backups</h2>
+      <div id="backup-list"></div>
+    </section>
+
+    <!-- ===== Schedules ===== -->
+    <section class="panel" id="panel-schedules">
+      <div class="panel-header">
+        <h2>Schedules</h2>
+        <button class="btn" id="new-schedule-btn">+ New</button>
+      </div>
+      <div id="schedule-list"></div>
+    </section>
+
+    <!-- ===== Audit Log ===== -->
+    <section class="panel" id="panel-audit">
+      <h2>Audit Log</h2>
+      <div class="table-wrap">
+        <table class="data-table" id="audit-table">
+          <thead><tr><th>Time</th><th>User</th><th>Action</th><th>Instance</th><th>Details</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ===== Users ===== -->
+    <section class="panel" id="panel-users">
+      <div class="panel-header">
+        <h2>Users</h2>
+        <button class="btn admin-only" id="new-user-btn">+ New</button>
+      </div>
+      <div id="user-list"></div>
+    </section>
   </main>
 </div>
 
-<!-- ---------- Create instance modal ---------- -->
-<div class="modal-backdrop" id="create-modal">
-  <div class="modal">
+<!-- ===== Create instance modal ===== -->
+<div class="modal-backdrop" id="modal-create">
+  <div class="modal wide">
     <h3>New instance</h3>
-    <div class="modal-sub">Spins up a dedicated n8n container. Credentials stay inside it — no other instance can see them.</div>
     <form id="create-form">
-      <div class="field">
-        <label for="f-code">Code / ID</label>
-        <input id="f-code" type="text" placeholder="e.g. daffa or team-ops" required pattern="[a-z0-9][a-z0-9-]{2,19}" />
-        <div class="hint">Lowercase letters, numbers, dashes. 3-20 characters. Gets a dedicated port (5601-5699).</div>
+      <div class="form-row">
+        <div class="field flex-1">
+          <label for="f-code">Code / ID</label>
+          <input id="f-code" type="text" placeholder="e.g. jake or team-ops" required pattern="[a-z0-9][a-z0-9-]{2,19}" />
+          <div class="hint">3-20 lowercase letters, numbers, dashes</div>
+        </div>
+        <div class="field flex-1">
+          <label for="f-owner">Owner name</label>
+          <input id="f-owner" type="text" placeholder="Who this is for (optional)" />
+        </div>
       </div>
-      <div class="field">
-        <label for="f-owner">Owner name (optional)</label>
-        <input id="f-owner" type="text" placeholder="Who this instance is for" />
+      <div class="form-row">
+        <div class="field">
+          <label for="f-tags">Tags</label>
+          <input id="f-tags" type="text" placeholder="Comma-separated, e.g. dev,frontend" />
+        </div>
       </div>
-      <div class="field">
-        <label for="f-user">Basic-auth username (optional)</label>
-        <input id="f-user" type="text" placeholder="Extra login on top of the container itself" />
+      <div class="form-row">
+        <div class="field flex-1">
+          <label for="f-cpu">CPU limit (cores, 0.1-4)</label>
+          <input id="f-cpu" type="number" min="0.1" max="4" step="0.1" placeholder="0.5" />
+        </div>
+        <div class="field flex-1">
+          <label for="f-mem">Memory limit (MB, 128-8192)</label>
+          <input id="f-mem" type="number" min="128" max="8192" step="128" placeholder="512" />
+        </div>
       </div>
-      <div class="field">
-        <label for="f-pass">Basic-auth password (optional)</label>
-        <input id="f-pass" type="password" placeholder="Leave blank for no extra login" />
+      <div class="form-row">
+        <div class="field flex-1">
+          <label for="f-version">n8n version</label>
+          <input id="f-version" type="text" placeholder="n8nio/n8n:latest" />
+          <div class="hint">Leave blank for default (latest)</div>
+        </div>
+        <div class="field flex-1">
+          <label for="f-tz">Timezone</label>
+          <input id="f-tz" type="text" placeholder="Asia/Jakarta" />
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="field flex-1">
+          <label for="f-user">Basic-auth username</label>
+          <input id="f-user" type="text" placeholder="Optional" />
+        </div>
+        <div class="field flex-1">
+          <label for="f-pass">Basic-auth password</label>
+          <input id="f-pass" type="password" placeholder="Optional" />
+        </div>
       </div>
       <div class="error-text" id="create-error"></div>
       <div class="modal-actions">
@@ -82,31 +174,123 @@
   </div>
 </div>
 
-<!-- ---------- Logs modal ---------- -->
-<div class="modal-backdrop" id="logs-modal">
+<!-- ===== Create schedule modal ===== -->
+<div class="modal-backdrop" id="modal-schedule">
+  <div class="modal">
+    <h3 id="schedule-title">New Schedule</h3>
+    <form id="schedule-form">
+      <div class="field">
+        <label for="s-name">Name</label>
+        <input id="s-name" type="text" placeholder="e.g. Morning start" required />
+      </div>
+      <div class="field">
+        <label for="s-type">Action</label>
+        <select id="s-type"><option value="start">Start</option><option value="stop">Stop</option><option value="restart">Restart</option></select>
+      </div>
+      <div class="field">
+        <label for="s-code">Instance code</label>
+        <input id="s-code" type="text" placeholder="* for all, or a specific code" required />
+      </div>
+      <div class="field">
+        <label for="s-interval">Interval (minutes)</label>
+        <input id="s-interval" type="number" min="1" placeholder="60" required />
+      </div>
+      <div class="error-text" id="schedule-error"></div>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-ghost" id="schedule-cancel">Cancel</button>
+        <button type="submit" class="btn" id="schedule-submit">Save</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ===== Create user modal ===== -->
+<div class="modal-backdrop" id="modal-user">
+  <div class="modal">
+    <h3>New User</h3>
+    <form id="user-form">
+      <div class="field"><label for="u-name">Username</label><input id="u-name" type="text" required /></div>
+      <div class="field"><label for="u-pass">Password</label><input id="u-pass" type="password" required minlength="6" /></div>
+      <div class="field"><label for="u-role">Role</label><select id="u-role"><option value="viewer">Viewer</option><option value="admin">Admin</option></select></div>
+      <div class="error-text" id="user-error"></div>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-ghost" id="user-cancel">Cancel</button>
+        <button type="submit" class="btn" id="user-submit">Create</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ===== Change password modal ===== -->
+<div class="modal-backdrop" id="modal-password">
+  <div class="modal">
+    <h3>Change Password</h3>
+    <form id="password-form">
+      <div class="field"><label>Current</label><input id="p-current" type="password" required /></div>
+      <div class="field"><label>New</label><input id="p-new" type="password" required minlength="6" /></div>
+      <div class="error-text" id="password-error"></div>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-ghost" id="password-cancel">Cancel</button>
+        <button type="submit" class="btn">Change</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ===== Version modal ===== -->
+<div class="modal-backdrop" id="modal-version">
+  <div class="modal">
+    <h3>Change n8n version</h3>
+    <form id="version-form">
+      <input type="hidden" id="v-code" />
+      <div class="field"><label>Image tag</label><input id="v-tag" type="text" placeholder="n8nio/n8n:latest" required /></div>
+      <div class="error-text" id="version-error"></div>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-ghost" id="version-cancel">Cancel</button>
+        <button type="submit" class="btn">Update</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ===== Clone modal ===== -->
+<div class="modal-backdrop" id="modal-clone">
+  <div class="modal">
+    <h3>Clone Instance</h3>
+    <form id="clone-form">
+      <input type="hidden" id="clone-source" />
+      <div class="field"><label>New code for clone</label><input id="clone-code" type="text" placeholder="e.g. team-ops-clone" required pattern="[a-z0-9][a-z0-9-]{2,19}" /></div>
+      <div class="hint">Workflows will be copied. Credentials cannot be cloned for security.</div>
+      <div class="error-text" id="clone-error"></div>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-ghost" id="clone-cancel">Cancel</button>
+        <button type="submit" class="btn">Clone</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ===== Logs modal ===== -->
+<div class="modal-backdrop" id="modal-logs">
   <div class="modal wide">
     <h3 id="logs-title">Logs</h3>
-    <div class="modal-sub">Last 200 lines. Refresh to pull the latest.</div>
-    <div class="logs-box" id="logs-content">Loading…</div>
+    <div class="logs-box" id="logs-content">Loading...</div>
     <div class="modal-actions">
-      <button type="button" class="btn btn-ghost" id="logs-refresh">Refresh</button>
-      <button type="button" class="btn" id="logs-close">Close</button>
+      <button class="btn btn-ghost" id="logs-refresh">Refresh</button>
+      <button class="btn" id="logs-close">Close</button>
     </div>
   </div>
 </div>
 
-<!-- ---------- Delete confirm modal ---------- -->
-<div class="modal-backdrop" id="delete-modal">
+<!-- ===== Delete confirm modal ===== -->
+<div class="modal-backdrop" id="modal-delete">
   <div class="modal">
     <h3>Delete instance</h3>
     <div class="modal-sub" id="delete-sub"></div>
-    <label style="display:flex; align-items:center; gap:8px; font-size:13px; color: var(--text-muted); margin-top: 8px;">
-      <input type="checkbox" id="delete-remove-data" />
-      Also permanently delete its data volume (all workflows &amp; credentials)
-    </label>
+    <label class="checkbox-label"><input type="checkbox" id="delete-remove-data" />Also permanently delete data volume</label>
     <div class="modal-actions">
-      <button type="button" class="btn btn-ghost" id="delete-cancel">Cancel</button>
-      <button type="button" class="btn btn-danger" id="delete-confirm">Delete</button>
+      <button class="btn btn-ghost" id="delete-cancel">Cancel</button>
+      <button class="btn btn-danger" id="delete-confirm">Delete</button>
     </div>
   </div>
 </div>
