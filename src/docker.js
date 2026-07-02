@@ -28,8 +28,16 @@ async function ensureImage() {
 }
 
 async function findAvailablePort(assignedPorts) {
-  // Check which ports are actually in use on the host
+  // Collect ports already in use from Docker (any container, not just n8n-manager)
   const used = new Set(assignedPorts);
+  const containers = await docker.listContainers({ all: true });
+  for (const c of containers) {
+    if (c.Ports) {
+      for (const p of c.Ports) {
+        if (p.PublicPort) used.add(p.PublicPort);
+      }
+    }
+  }
   for (let port = PORT_MIN; port <= PORT_MAX; port++) {
     if (!used.has(port)) return port;
   }
