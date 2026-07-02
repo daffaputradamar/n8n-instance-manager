@@ -31,7 +31,6 @@ async function createInstance({ code, publicBaseUrl, basicAuthUser, basicAuthPas
 
   const base = publicBaseUrl.replace(/\/+$/, "");
   const env = [
-    `N8N_PATH=/${code}/`,
     `WEBHOOK_URL=${base}/${code}/`,
     `N8N_EDITOR_BASE_URL=${base}/${code}/`,
     `GENERIC_TIMEZONE=${timezone || "Asia/Jakarta"}`,

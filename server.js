@@ -15,7 +15,7 @@ const ADMIN_USER = process.env.ADMIN_USER || "admin";
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "changeme";
 
 // Codes can't collide with the manager's own routes
-const RESERVED = new Set(["api", "health", "favicon.ico", "manager", "static", "", "m"]);
+const RESERVED = new Set(["api", "health", "manager", "", "m"]);
 const CODE_RE = /^[a-z0-9][a-z0-9-]{2,19}$/; // 3-20 chars, lowercase letters/digits/dashes
 
 const app = express();
@@ -156,8 +156,22 @@ const n8nProxy = createProxyMiddleware({
   changeOrigin: true,
   logLevel: "warn",
   router: (req) => {
-    const code = req.url.split("/")[1];
+    let code = req.url.split("/")[1];
+    // If the code isn't a known instance, try the Referer header
+    if (!db.getByCode(code)) {
+      const referer = req.headers.referer || "";
+      const m = referer.match(/\/([a-z0-9][a-z0-9-]{2,19})\//);
+      if (m && db.getByCode(m[1])) code = m[1];
+    }
     return `http://${dock.containerName(code)}:5678`;
+  },
+  pathRewrite: (path, req) => {
+    const first = path.split("/")[1];
+    // Only strip the first path segment if it's a valid instance code
+    if (first && /^[a-z0-9][a-z0-9-]{2,19}$/.test(first) && db.getByCode(first)) {
+      return path.replace(/^\/[^/]+/, "") || "/";
+    }
+    return path;
   },
   onError: (err, req, res) => {
     if (res.writeHead) {
@@ -170,8 +184,16 @@ const n8nProxy = createProxyMiddleware({
 app.use(
   "/:code",
   async (req, res, next) => {
-    const code = req.params.code;
+    let code = req.params.code;
     if (RESERVED.has(code)) return next(); // let it fall through (404 if nothing else matched)
+
+    // If the code isn't a known instance, try the Referer header
+    if (!db.getByCode(code)) {
+      const referer = req.headers.referer || "";
+      const m = referer.match(/\/([a-z0-9][a-z0-9-]{2,19})\//);
+      if (m && db.getByCode(m[1])) code = m[1];
+    }
+
     const inst = db.getByCode(code);
     if (!inst) return res.status(404).send(`No instance found for code "${code}".`);
     const status = await dock.getStatus(code);
