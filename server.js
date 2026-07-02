@@ -15,7 +15,7 @@ const ADMIN_USER = process.env.ADMIN_USER || "admin";
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "changeme";
 
 // Codes can't collide with the manager's own routes
-const RESERVED = new Set(["api", "assets", "health", "favicon.ico", "manager", "static", ""]);
+const RESERVED = new Set(["api", "health", "favicon.ico", "manager", "static", "", "m"]);
 const CODE_RE = /^[a-z0-9][a-z0-9-]{2,19}$/; // 3-20 chars, lowercase letters/digits/dashes
 
 const app = express();
@@ -147,7 +147,7 @@ app.get("/api/instances/:code/logs", requireAuth, async (req, res) => {
 app.get("/health", (req, res) => res.json({ ok: true }));
 
 // ---------- Static dashboard ----------
-app.use("/assets", express.static(path.join(__dirname, "public", "assets")));
+app.use("/m", express.static(path.join(__dirname, "public", "m")));
 app.get("/", (req, res) => res.sendFile(path.join(__dirname, "public", "index.html")));
 
 // ---------- Dynamic proxy: /{code}/* -> that user's n8n container ----------
