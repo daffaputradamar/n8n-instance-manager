@@ -2,20 +2,16 @@ require("dotenv").config();
 const express = require("express");
 const session = require("express-session");
 const path = require("path");
-const http = require("http");
-const { createProxyMiddleware } = require("http-proxy-middleware");
 
 const db = require("./src/db");
 const dock = require("./src/docker");
 const { requireAuth } = require("./src/auth");
 
-const PORT = process.env.PORT || 8000;
+const PORT = process.env.MANAGER_PORT || 5600;
 const PUBLIC_BASE_URL = (process.env.PUBLIC_BASE_URL || `http://localhost:${PORT}`).replace(/\/+$/, "");
 const ADMIN_USER = process.env.ADMIN_USER || "admin";
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "changeme";
 
-// Codes can't collide with the manager's own routes
-const RESERVED = new Set(["api", "health", "manager", "", "m"]);
 const CODE_RE = /^[a-z0-9][a-z0-9-]{2,19}$/; // 3-20 chars, lowercase letters/digits/dashes
 
 const app = express();
@@ -59,9 +55,9 @@ app.get("/api/instances", requireAuth, async (req, res) => {
 app.post("/api/instances", requireAuth, async (req, res) => {
   const { code, ownerName, basicAuthUser, basicAuthPassword, timezone } = req.body || {};
 
-  if (!code || !CODE_RE.test(code) || RESERVED.has(code)) {
+  if (!code || !CODE_RE.test(code)) {
     return res.status(400).json({
-      error: "Code must be 3-20 lowercase letters, numbers, or dashes, and can't be a reserved word.",
+      error: "Code must be 3-20 lowercase letters, numbers, or dashes.",
     });
   }
   if (db.getByCode(code)) {
@@ -72,8 +68,10 @@ app.post("/api/instances", requireAuth, async (req, res) => {
   }
 
   try {
+    const port = await dock.findAvailablePort(db.getAllPorts());
     await dock.createInstance({
       code,
+      port,
       publicBaseUrl: PUBLIC_BASE_URL,
       basicAuthUser,
       basicAuthPassword,
@@ -81,6 +79,7 @@ app.post("/api/instances", requireAuth, async (req, res) => {
     });
     const instance = db.create({
       code,
+      port,
       ownerName: ownerName || "",
       basicAuthUser: basicAuthUser || "",
       createdAt: new Date().toISOString(),
@@ -150,65 +149,7 @@ app.get("/health", (req, res) => res.json({ ok: true }));
 app.use("/m", express.static(path.join(__dirname, "public", "m")));
 app.get("/", (req, res) => res.sendFile(path.join(__dirname, "public", "index.html")));
 
-// ---------- Dynamic proxy: /{code}/* -> that user's n8n container ----------
-const n8nProxy = createProxyMiddleware({
-  ws: true,
-  changeOrigin: true,
-  logLevel: "warn",
-  router: (req) => {
-    let code = req.url.split("/")[1];
-    // If the code isn't a known instance, try the Referer header
-    if (!db.getByCode(code)) {
-      const referer = req.headers.referer || "";
-      const m = referer.match(/\/([a-z0-9][a-z0-9-]{2,19})\//);
-      if (m && db.getByCode(m[1])) code = m[1];
-    }
-    return `http://${dock.containerName(code)}:5678`;
-  },
-  pathRewrite: (path, req) => {
-    const first = path.split("/")[1];
-    // Only strip the first path segment if it's a valid instance code
-    if (first && /^[a-z0-9][a-z0-9-]{2,19}$/.test(first) && db.getByCode(first)) {
-      return path.replace(/^\/[^/]+/, "") || "/";
-    }
-    return path;
-  },
-  onError: (err, req, res) => {
-    if (res.writeHead) {
-      res.writeHead(502, { "Content-Type": "text/plain" });
-      res.end("Instance unreachable: " + err.message);
-    }
-  },
-});
-
-app.use(
-  "/:code",
-  async (req, res, next) => {
-    let code = req.params.code;
-    if (RESERVED.has(code)) return next(); // let it fall through (404 if nothing else matched)
-
-    // If the code isn't a known instance, try the Referer header
-    if (!db.getByCode(code)) {
-      const referer = req.headers.referer || "";
-      const m = referer.match(/\/([a-z0-9][a-z0-9-]{2,19})\//);
-      if (m && db.getByCode(m[1])) code = m[1];
-    }
-
-    const inst = db.getByCode(code);
-    if (!inst) return res.status(404).send(`No instance found for code "${code}".`);
-    const status = await dock.getStatus(code);
-    if (status !== "running") {
-      return res.status(503).send(`This n8n instance ("${code}") is currently stopped.`);
-    }
-    next();
-  },
-  n8nProxy
-);
-
-const server = http.createServer(app);
-server.on("upgrade", n8nProxy.upgrade);
-
-server.listen(PORT, () => {
+app.listen(PORT, () => {
   console.log(`n8n-manager listening on :${PORT}`);
   console.log(`Public base URL: ${PUBLIC_BASE_URL}`);
 });

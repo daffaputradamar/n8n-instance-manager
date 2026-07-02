@@ -6,6 +6,8 @@ const docker = new Docker({
 
 const NETWORK = process.env.N8N_NETWORK || "n8n-manager-net";
 const IMAGE = process.env.N8N_IMAGE || "n8nio/n8n:latest";
+const PORT_MIN = Number(process.env.N8N_PORT_MIN || 5601);
+const PORT_MAX = Number(process.env.N8N_PORT_MAX || 5699);
 
 function containerName(code) {
   return `n8n-${code}`;
@@ -25,18 +27,26 @@ async function ensureImage() {
   });
 }
 
-async function createInstance({ code, publicBaseUrl, basicAuthUser, basicAuthPassword, timezone }) {
+async function findAvailablePort(assignedPorts) {
+  // Check which ports are actually in use on the host
+  const used = new Set(assignedPorts);
+  for (let port = PORT_MIN; port <= PORT_MAX; port++) {
+    if (!used.has(port)) return port;
+  }
+  throw new Error(`No available port in range ${PORT_MIN}-${PORT_MAX}`);
+}
+
+async function createInstance({ code, port, publicBaseUrl, basicAuthUser, basicAuthPassword, timezone }) {
   await ensureImage();
   await docker.createVolume({ Name: volumeName(code) });
 
-  const base = publicBaseUrl.replace(/\/+$/, "");
+  const hostBase = publicBaseUrl.replace(/:\d+$/, "");
+  const instanceUrl = `${hostBase}:${port}`;
   const env = [
-    `N8N_PATH=/${code}/`,
-    `WEBHOOK_URL=${base}/${code}/`,
-    `N8N_EDITOR_BASE_URL=${base}/${code}/`,
+    `WEBHOOK_URL=${instanceUrl}/`,
+    `N8N_EDITOR_BASE_URL=${instanceUrl}/`,
     `GENERIC_TIMEZONE=${timezone || "Asia/Jakarta"}`,
-    `N8N_PROXY_HOPS=1`,
-    `N8N_SECURE_COOKIE=false`
+    `N8N_SECURE_COOKIE=false`,
   ];
   if (basicAuthUser && basicAuthPassword) {
     env.push("N8N_BASIC_AUTH_ACTIVE=true");
@@ -49,10 +59,14 @@ async function createInstance({ code, publicBaseUrl, basicAuthUser, basicAuthPas
     name: containerName(code),
     Env: env,
     Labels: { "n8n-manager.code": code },
+    ExposedPorts: { "5678/tcp": {} },
     HostConfig: {
       Binds: [`${volumeName(code)}:/home/node/.n8n`],
       RestartPolicy: { Name: "unless-stopped" },
       NetworkMode: NETWORK,
+      PortBindings: {
+        "5678/tcp": [{ HostPort: String(port) }],
+      },
     },
   });
   await container.start();
@@ -132,4 +146,7 @@ module.exports = {
   getLogs,
   containerName,
   volumeName,
+  findAvailablePort,
+  PORT_MIN,
+  PORT_MAX,
 };

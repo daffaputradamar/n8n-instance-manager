@@ -79,8 +79,10 @@ async function loadInstances() {
   }
 }
 
-function routeUrl(code) {
-  return `${window.location.origin}/${code}/`;
+function instanceUrl(inst) {
+  const origin = window.location.origin;
+  const base = origin.replace(/:\d+$/, "");
+  return `${base}:${inst.port}/`;
 }
 
 function renderInstances(list) {
@@ -100,7 +102,7 @@ function renderInstances(list) {
     .sort((a, b) => a.code.localeCompare(b.code))
     .map((inst) => {
       const running = inst.status === "running";
-      const url = routeUrl(inst.code);
+      const url = instanceUrl(inst);
       return `
       <div class="instance-card" data-code="${inst.code}">
         <div class="instance-main">

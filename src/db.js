@@ -50,10 +50,14 @@ function update(code, patch) {
   return data.instances[idx];
 }
 
+function getAllPorts() {
+  return readAll().instances.map((i) => i.port).filter(Boolean);
+}
+
 function remove(code) {
   const data = readAll();
   data.instances = data.instances.filter((i) => i.code !== code);
   writeAll(data);
 }
 
-module.exports = { getAll, getByCode, create, update, remove };
+module.exports = { getAll, getByCode, create, update, remove, getAllPorts };

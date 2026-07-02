@@ -4,9 +4,9 @@ services:
     container_name: n8n-manager
     restart: unless-stopped
     ports:
-      - "${MANAGER_PORT:-5600}:8000"
+      - "${MANAGER_PORT:-5600}:5600"
     environment:
-      - PORT=8000
+      - MANAGER_PORT=${MANAGER_PORT:-5600}
       - ADMIN_USER=${ADMIN_USER:-admin}
       - ADMIN_PASSWORD=${ADMIN_PASSWORD:-P@ssw0rd1}
       - SESSION_SECRET=iwnkxe0joooH6NsWZAzBxDv4tKjRPIsZcjZY2bS1jz3
