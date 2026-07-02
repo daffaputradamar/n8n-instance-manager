@@ -4,7 +4,11 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>n8n-manager</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Fira+Code:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/m/style.css" />
+<script src="https://unpkg.com/lucide@latest"></script>
 </head>
 <body>
 
@@ -33,12 +37,12 @@
   <aside class="sidebar" id="sidebar">
     <div class="sidebar-brand">n8n-manager</div>
     <nav class="sidebar-nav" id="sidebar-nav">
-      <a class="nav-item active" data-panel="dashboard">Dashboard</a>
-      <a class="nav-item" data-panel="instances">Instances</a>
-      <a class="nav-item" data-panel="backups">Backups</a>
-      <a class="nav-item" data-panel="schedules">Schedules</a>
-      <a class="nav-item" data-panel="audit">Audit Log</a>
-      <a class="nav-item admin-only" data-panel="users">Users</a>
+      <a class="nav-item active" data-panel="dashboard"><i data-lucide="layout-dashboard"></i>Dashboard</a>
+      <a class="nav-item" data-panel="instances"><i data-lucide="server"></i>Instances</a>
+      <a class="nav-item" data-panel="backups"><i data-lucide="database"></i>Backups</a>
+      <a class="nav-item" data-panel="schedules"><i data-lucide="calendar"></i>Schedules</a>
+      <a class="nav-item" data-panel="audit"><i data-lucide="clipboard-list"></i>Audit Log</a>
+      <a class="nav-item admin-only" data-panel="users"><i data-lucide="users"></i>Users</a>
     </nav>
     <div class="sidebar-footer">
       <span class="sidebar-user" id="sidebar-user"></span>

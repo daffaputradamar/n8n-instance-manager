@@ -35,6 +35,12 @@ function fmtDate(d) {
   return t.toLocaleDateString() + " " + t.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 }
 
+function afterRender() {
+  if (window.lucide) {
+    window.lucide.createIcons();
+  }
+}
+
 // ---------- auth ----------
 async function checkSession() {
   try {
@@ -59,6 +65,7 @@ function showApp() {
   switchPanel("dashboard");
   clearInterval(pollTimer);
   pollTimer = setInterval(refresh, 10000);
+  afterRender();
 }
 
 $("login-form").addEventListener("submit", async (e) => {
@@ -158,6 +165,7 @@ async function loadDashboard() {
             <a href="${url}" target="_blank" rel="noopener" style="font-size:13px;flex-shrink:0">Open &#8599;</a>
           </div>`;
         }).join("");
+    afterRender();
   } catch (err) { if (err.message.includes("signed in")) showLogin(); }
 }
 
@@ -233,6 +241,7 @@ function renderInstances(list) {
     </div>`;
   }).join("");
   updateBulkBar();
+  afterRender();
 }
 
 function updateBulkBar() {
@@ -407,6 +416,7 @@ async function loadBackups() {
             <button class="btn btn-danger btn-sm" data-delbackup="${esc(b.id)}">Delete</button>
           </td>
         </tr>`).join("") + '</tbody></table></div>';
+    afterRender();
   } catch {}
 }
 $("backup-list").addEventListener("click", async (e) => {
@@ -444,6 +454,7 @@ async function loadSchedules() {
           </td>
         </tr>`).join("")}
       </tbody></table></div>`;
+    afterRender();
   } catch {}
 }
 $("new-schedule-btn").addEventListener("click", () => {
@@ -494,6 +505,7 @@ async function loadAudit() {
         <td style="font-family:var(--mono);font-size:12px">${esc(e.instance || "-")}</td>
         <td style="font-size:11px;color:var(--text-muted)">${esc(JSON.stringify(e.details || {}))}</td>
       </tr>`).join("");
+    afterRender();
   } catch {}
 }
 
@@ -514,6 +526,7 @@ async function loadUsers() {
           </td>
         </tr>`).join("")}
       </tbody></table></div>`;
+    afterRender();
   } catch (err) { if (err.message.includes("Admin")) showToast("Admin access required", true); }
 }
 $("new-user-btn").addEventListener("click", () => { $("user-form").reset(); $("user-error").textContent = ""; openModal("modal-user"); });
