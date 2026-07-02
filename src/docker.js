@@ -31,10 +31,12 @@ async function createInstance({ code, publicBaseUrl, basicAuthUser, basicAuthPas
 
   const base = publicBaseUrl.replace(/\/+$/, "");
   const env = [
+    `N8N_PATH=/${code}/`,
     `WEBHOOK_URL=${base}/${code}/`,
     `N8N_EDITOR_BASE_URL=${base}/${code}/`,
     `GENERIC_TIMEZONE=${timezone || "Asia/Jakarta"}`,
     `N8N_PROXY_HOPS=1`,
+    `N8N_SECURE_COOKIE=false`
   ];
   if (basicAuthUser && basicAuthPassword) {
     env.push("N8N_BASIC_AUTH_ACTIVE=true");
